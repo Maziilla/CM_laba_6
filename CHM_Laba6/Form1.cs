@@ -16,7 +16,6 @@ namespace SLAU
         public  int  N=5; //Размерности
         public double[] solution,RightPart; //Для решения
         public int[] kol;
-        public double[,] MatrForM, MateForSpline;
         const double E = 1E-8; //Точность
         public double chis;
         List<string> strList = new List<string>(); 
@@ -118,7 +117,7 @@ namespace SLAU
             int N = 1;
             int kol_obr = 0;
             double res = 0,xi,M2,M2_temp,Exit,res_runge_1=0,res_runge_2=0,poradok=0;
-            double h = (b - a) / (N * 2);            
+            double h = (b - a) / (N * 2),h1=0;            
             do
             {
                 kol_obr = 0;
@@ -139,20 +138,26 @@ namespace SLAU
                         M2 = M2_temp;
                 }               
                 res *= (double)(b - a) / (2 * N);
-                Exit = M2 * Math.Pow((b - a), 3) / (12 * N);
+
+                h1 = h / 2;
+                res_runge_1 += f(a) + f(b);
+                for (int i = 1; i < 2*N; i++)
+                {
+                    xi = a + h1 * i;
+                    res_runge_1 += 2 * f(xi);                    
+                }
+                res_runge_1*= (double)(b - a) / (4 * N);
+                Exit = Math.Abs(res_runge_1 - res) / res_runge_1;                
                 strList.Add("N = "+ N +" Интеграл равен "+ res + " Погрешность = " + Exit);
             } while (Exit > E);
             //Для Ранге
-            res_runge_1 += f(a) + f(b);
+            h = h / 4;
             res_runge_2 += f(a) + f(b);
-            for (int i = 1; i < N; i++)
-            {
-                xi = a + h * i;
-                res_runge_1 +=2* f(a + 0.5 * h * i);
-                res_runge_2 +=2* f(a + 0.25 * h * i);                
+            for (int i = 1; i < 4*N; i++)
+            {               
+                res_runge_2 +=2* f(a +  h * i);                
             }
-            res_runge_1 *= (double)(b - a) / (2 * N);
-            res_runge_2 *= (double)(b - a) / (2 * N);
+            res_runge_2 *= (double)(b - a) / (8 * N);
             poradok = Math.Log((res_runge_2 - res) / (res_runge_1 - res) - 1) / Math.Log(0.5);
             strList.Add("Порядок аппроксимации равен = " + poradok);
             strList.Add(" Общее число обращений к подынтергатльной функции = " + kol_obr);
@@ -163,7 +168,7 @@ namespace SLAU
             N = 2;
             int kol_obr = 0;
             double res = 0, xi, M4, M4_temp, Exit, res_runge_1 = 0, res_runge_2 = 0, poradok = 0;
-            double h = (b - a) / (N * 2);
+            double h = (b - a) / (N * 2),h1=0;
             do
             {
                 kol_obr = 0;
@@ -184,24 +189,37 @@ namespace SLAU
                 }
                 res *= h;
                 res += h * h / 12 * (f_derivative(a) - f_derivative(b));
+
+                res_runge_1 += (f(a) + f(b)) / 2;
+                h1 = h/2;
+                for (int i = 1; i < 2*N; i++)
+                {
+                    res_runge_1 += f(a + h1 * i);
+                }
+                res_runge_1 *= h1;
+                res_runge_1 += h1 * h1 / 12 * (f_derivative(a) - f_derivative(b));
+
                 kol_obr += 2;
-                Exit = M4 * Math.Pow(h, 4) * (b - a) / 2880;
+                //Exit =Math.Abs( M4 * Math.Pow(h, 4) * (b - a) / 2880);
+                Exit = Math.Abs((res - res_runge_1)) / res_runge_1;
                 strList.Add("N = " + N + " Интеграл равен " + res + " Погрешность = " + Exit);
             } while (Exit > E);
             //Для Ранге
-            res_runge_1 += (f(a) + f(b)) / 2;
+            
             res_runge_2 += (f(a) + f(b)) / 2;
-            for (int i = 1; i < N - 1; i++)
-            {
-
-                res_runge_1 += f(a + 0.5 * h * i);
-                res_runge_2 += f(a + 0.25 * h * i);
-            }
-            res_runge_1 *= h;
+            
+            
+            N *= 4;
+            h = (double)(b - a) / N;
+            for (int i = 1; i < N; i++)
+            {               
+                res_runge_2 += f(a + h * i);
+                //res_runge_1 += f(a + 0.5 * h * i);
+                //res_runge_2 += f(a + 0.25 * h * i);
+            }            
             res_runge_2 *= h;
-            res_runge_1 += h * h / 12 * (f_derivative(a) - f_derivative(b));
             res_runge_2 += h * h / 12 * (f_derivative(a) - f_derivative(b));
-            poradok = Math.Log((res_runge_2 - res) / (res_runge_1 - res) - 1) / Math.Log(0.5);
+            poradok = Math.Log(Math.Abs((res_runge_2 - res) / (res_runge_1 - res) - 1)) / Math.Log(0.5);
             strList.Add("Порядок аппроксимации равен = " + poradok);
             strList.Add(" Общее число обращений к подынтергатльной функции = " + kol_obr);
 
@@ -210,8 +228,7 @@ namespace SLAU
         //Решение уравнения
         private void SolveButton_Click(object sender, EventArgs e)
         {
-
-            //KvadraturTrapec();
+            KvadraturTrapec();
             KvadraturTrapecModif();
             SaveFile();
         }
