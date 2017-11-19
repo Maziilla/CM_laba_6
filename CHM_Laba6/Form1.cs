@@ -125,39 +125,39 @@ namespace SLAU
                 N *= 2;
                 h = (double)(b - a) / N;
                 M2 = Math.Abs(f_derivative_2(a));
-               
-                res += f(a) + f(b);
+
+                res += 0.5 * (f(a) + f(b));
                 kol_obr += 2;
                 for (int i = 1; i < N; i++)
                 {
                     xi = a + h * i;
-                    res += 2 * f(xi);
+                    res += f(xi);
                     kol_obr++;
                     M2_temp = Math.Abs(f_derivative_2(xi));
                     if (M2_temp > M2)
                         M2 = M2_temp;
                 }               
-                res *= (double)(b - a) / (2 * N);
+                res *= h;
 
                 h1 = h / 2;
-                res_runge_1 += f(a) + f(b);
+                res_runge_1 += 0.5 * (f(a) + f(b));
                 for (int i = 1; i < 2*N; i++)
                 {
                     xi = a + h1 * i;
-                    res_runge_1 += 2 * f(xi);                    
+                    res_runge_1 += f(xi);                    
                 }
-                res_runge_1*= (double)(b - a) / (4 * N);
+                res_runge_1 *= h1;
                 Exit = Math.Abs(res_runge_1 - res) / res_runge_1;                
                 strList.Add("N = "+ N +" Интеграл равен "+ res + " Погрешность = " + Exit);
             } while (Exit > E);
             //Для Ранге
             h = h / 4;
-            res_runge_2 += f(a) + f(b);
+            res_runge_2 += 0.5 * (f(a) + f(b));
             for (int i = 1; i < 4*N; i++)
             {               
-                res_runge_2 +=2* f(a +  h * i);                
+                res_runge_2 += f(a +  h * i);                
             }
-            res_runge_2 *= (double)(b - a) / (8 * N);
+            res_runge_2 *= h;
             poradok = Math.Log((res_runge_2 - res) / (res_runge_1 - res) - 1) / Math.Log(0.5);
             strList.Add("Порядок аппроксимации равен = " + poradok);
             strList.Add(" Общее число обращений к подынтергатльной функции = " + kol_obr);
