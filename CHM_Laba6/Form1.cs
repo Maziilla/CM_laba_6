@@ -17,7 +17,7 @@ namespace SLAU
         public double[] solution,RightPart; //Для решения
         public int[] kol;
         public double[,] MatrForM, MateForSpline;
-        const double E = 1E-27; //Точность
+        const double E = 1E-8; //Точность
         public double chis;
         List<string> strList = new List<string>(); 
 
@@ -116,20 +116,24 @@ namespace SLAU
         {
             strList.Add("Квадратурное приближение методом трапеций");
             int N = 1;
+            int kol_obr = 0;
             double res = 0,xi,M2,M2_temp,Exit,res_runge_1=0,res_runge_2=0,poradok=0;
             double h = (b - a) / (N * 2);            
             do
             {
+                kol_obr = 0;
                 res_runge_2 = res_runge_1 = res = 0;
                 N *= 2;
                 h = (double)(b - a) / N;
                 M2 = Math.Abs(f_derivative_2(a));
                
                 res += f(a) + f(b);
+                kol_obr += 2;
                 for (int i = 1; i < N; i++)
                 {
                     xi = a + h * i;
-                    res += 2 * f(xi);                    
+                    res += 2 * f(xi);
+                    kol_obr++;
                     M2_temp = Math.Abs(f_derivative_2(xi));
                     if (M2_temp > M2)
                         M2 = M2_temp;
@@ -151,132 +155,63 @@ namespace SLAU
             res_runge_2 *= (double)(b - a) / (2 * N);
             poradok = Math.Log((res_runge_2 - res) / (res_runge_1 - res) - 1) / Math.Log(0.5);
             strList.Add("Порядок аппроксимации равен = " + poradok);
+            strList.Add(" Общее число обращений к подынтергатльной функции = " + kol_obr);
         }
         public void KvadraturTrapecModif()
         {
             strList.Add("Квадратурное приближение модифицированным методом трапеций");
             N = 2;
-            double res = 0, xi, M4, M4_temp, Exit, R, res_runge_1 = 0, res_runge_2 = 0, poradok = 0;
+            int kol_obr = 0;
+            double res = 0, xi, M4, M4_temp, Exit, res_runge_1 = 0, res_runge_2 = 0, poradok = 0;
             double h = (b - a) / (N * 2);
             do
             {
+                kol_obr = 0;
                 res_runge_2 = res_runge_1 = res = 0;
                 N *= 2;
-                h = (double)(b - a) / N;              
-                //сплайны начало
-                MateForSpline = new double[N + 1, 3];
-                //MatrForM = new double[N - 1, N - 1];
-                double nu = h / (2 * h), lambda = nu;
-                for (int i = 0; i <= N; i++)
-                {
-                    MateForSpline[i, 0] = a + (i * h);
-                    MateForSpline[i, 1] = f(MateForSpline[i, 0]);
-                }
-                //for (int i = 0; i < N - 1; i++)
-                //{
-                //    MatrForM[i, i] = 4;
-                //    if (i - 1 >= 0) MatrForM[i, i - 1] = 1;
-                //    if (i + 1 < N - 1) MatrForM[i, i + 1] = 1;
-                //}
-                RightPart = new double[N - 1];
-                for (int i = 1; i < N; i++)
-                {
-                    RightPart[i - 1] = 3 * (MateForSpline[i + 1, 1] - MateForSpline[i - 1, 1]) / h;
-                }
-                RightPart[0] -= f_derivative(MateForSpline[0, 0]);
-                RightPart[N-2] -= f_derivative(MateForSpline[N, 0]);
-                var answer = ProgonkaSLAU(/*MatrForM, */RightPart);
-                for (int i = 1; i < N; i++)
-                    MateForSpline[i, 2] = answer[i - 1];
-                MateForSpline[0, 2] = f_derivative(MateForSpline[0, 0]);
-                MateForSpline[N, 2] = f_derivative(MateForSpline[N, 0]);
-                Func<double, double> z0 = x => (1 + 2 * x) * (1 - x) * (1 - x);
-                Func<double, double> z1 = x => x * (1 - x) * (1 - x);
-               
-                //сплайны конец
+                h = (double)(b - a) / N;  
                 res += (f(a) + f(b))/2;
-                R = 0;
+                kol_obr += 2;
                 M4 = Math.Abs(f_derivative_4(a));
-                for (int i = 1; i < N-1; i++)
+                for (int i = 1; i < N; i++)
                 {
-                    res += MateForSpline[i, 1];
-                    R += MateForSpline[i + 1, 2];
-                    xi = a + h * i;                    
+                    xi = a + h * i;
+                    res += f(xi);
+                    kol_obr++;
                     M4_temp = Math.Abs(f_derivative_4(xi));
                     if (M4_temp > M4)
                         M4 = M4_temp;
                 }
-                res = (res - R * h * h / 6.0) * h;
+                res *= h;
+                res += h * h / 12 * (f_derivative(a) - f_derivative(b));
+                kol_obr += 2;
                 Exit = M4 * Math.Pow(h, 4) * (b - a) / 2880;
                 strList.Add("N = " + N + " Интеграл равен " + res + " Погрешность = " + Exit);
             } while (Exit > E);
             //Для Ранге
-            res_runge_1 += (f(a) + f(b))/2;
-            R = 0;
-            res_runge_2 += (f(a) + f(b))/2;
-            for (int i = 1; i < N-1; i++)
+            res_runge_1 += (f(a) + f(b)) / 2;
+            res_runge_2 += (f(a) + f(b)) / 2;
+            for (int i = 1; i < N - 1; i++)
             {
-               
+
                 res_runge_1 += f(a + 0.5 * h * i);
-                R += MateForSpline[i + 1, 2];
                 res_runge_2 += f(a + 0.25 * h * i);
             }
-            res_runge_1 *= (res_runge_1 - R * h * h / 6.0) * h; ;
-            res_runge_2 *= (res_runge_2 - R * h * h / 6.0) * h; ;
+            res_runge_1 *= h;
+            res_runge_2 *= h;
+            res_runge_1 += h * h / 12 * (f_derivative(a) - f_derivative(b));
+            res_runge_2 += h * h / 12 * (f_derivative(a) - f_derivative(b));
             poradok = Math.Log((res_runge_2 - res) / (res_runge_1 - res) - 1) / Math.Log(0.5);
             strList.Add("Порядок аппроксимации равен = " + poradok);
-        }
-        //Метод кубических сплайнов 1го дефекта
-       /* public void CubSplain()
-        {
-            strList.Add("Метод кубических сплайнов 1го дефекта");
-            double[,] splains = new double[n, n];
-            double h = (double)(b - a) / n;
-            double nu = h / (2 * h), lambda = nu;
-            for (int i = 0; i <= n; i++)
-                MateForSpline[i, 0] = a + (i * h);
-            for (int i = 0; i <= n; i++)               
-                MateForSpline[i, 1] = f(MateForSpline[i, 0]);                
-            for (int i = 0; i < n - 1; i++)
-            {
-                MatrForM[i, i] = 4;
-                if (i - 1 >= 0) MatrForM[i, i-1] = 1;
-                if (i + 1 < n - 1) MatrForM[i, i+1] = 1;
-            }
-            strList.Add("Трёхдиагональная матрица");
-            WriteMas_(MatrForM, 4, 4);
-            RightPart = new double[n - 1];
-            for (int i = 1; i < n; i++)
-            {
-                RightPart[i - 1] = 3 * (MateForSpline[i + 1, 1] - MateForSpline[i - 1, 1]) / h;
-            }            
-            RightPart[0] -= f_derivative(MateForSpline[0, 0]);
-            RightPart[3] -= f_derivative(MateForSpline[n, 0]);            
-            strList.Add("Правая часть:");
-            Write(RightPart);
-            var answer = ProgonkaSLAU(MatrForM, RightPart);
-            //Write(answer);
-            for (int i = 1; i < n; i++)
-                MateForSpline[i,2] = answer[i - 1];
-            double M5,M4;
-            double temp;           
-            MateForSpline[0, 2] = f_derivative(MateForSpline[0, 0]);
-            MateForSpline[n, 2] = f_derivative(MateForSpline[n, 0]);
-           
-            for (int i = 0; i <= n; i++)
-                    MateForSpline[i, 1] = f_derivative(MateForSpline[i, 0]);
-          
+            strList.Add(" Общее число обращений к подынтергатльной функции = " + kol_obr);
 
-                 
-            strList.Add("       х       |      f(x)      |    S31(f;x)   |   Реальная   |       Оценка");
-            WriteMas_(splains, n, n);
         }
-        */
+        
         //Решение уравнения
         private void SolveButton_Click(object sender, EventArgs e)
         {
 
-           // KvadraturTrapec();
+            //KvadraturTrapec();
             KvadraturTrapecModif();
             SaveFile();
         }
