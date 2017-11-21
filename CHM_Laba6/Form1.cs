@@ -87,29 +87,7 @@ namespace SLAU
             for (int i = 1; i <= n; i++)
                 temp *= i;
             return temp;
-        }        
-        public double[] ProgonkaSLAU(/*double [,] Matr,*/double[] Right)
-        {
-            double[] res = new double[N-1], a = new double[N - 1], B = new double[N - 1];
-            int N1 = N - 2;
-            double y;
-            y = 4;
-            a[0] = -1 / y;
-            B[0] = Right[0] / y;
-            for (int i = 1; i < N1; i++)
-            {
-                y =4 + 1 * a[i - 1];
-                a[i] = -1 / y;
-                B[i] = (Right[i] - 1 * B[i - 1]) / y;
-            }
-            B[N1] = (Right[N1] - 1 * B[N1 - 1]) / (4 + 1 * a[N1 - 1]);
-            res[N1] = (Right[N1] - 1 * B[N1 - 1]) / (4 +1 * a[N1 - 1]);
-            for (int i = N1 - 1; i >= 0; i--)
-            {
-                res[i] = a[i] * res[i + 1] + B[i];
-            }
-            return res;
-        }
+        }             
         //трапеции
         public void KvadraturTrapec()
         {
@@ -117,7 +95,8 @@ namespace SLAU
             int N = 1;
             int kol_obr = 0;
             double res = 0,xi,M2,M2_temp,Exit,res_runge_1=0,res_runge_2=0,poradok=0;
-            double h = (b - a) / (N * 2),h1=0;            
+            double h = (b - a) / (N * 2),h1=0;
+            strList.Add("  N  " + "     Интеграл равен  " + "      Погрешность        " + "Порядок аппроксимации равен ");
             do
             {
                 kol_obr = 0;
@@ -147,20 +126,19 @@ namespace SLAU
                     res_runge_1 += f(xi);                    
                 }
                 res_runge_1 *= h1;
-                Exit = Math.Abs(res_runge_1 - res) / res_runge_1;                
-                strList.Add("N = "+ N +" Интеграл равен "+ res + " Погрешность = " + Exit);
+                Exit = Math.Abs(res_runge_1 - res) / res_runge_1;
+                h1 = h1 / 2;
+                res_runge_2 += 0.5 * (f(a) + f(b));
+                for (int i = 1; i < 4 * N; i++)
+                {
+                    res_runge_2 += f(a + h1 * i);
+                }
+                res_runge_2 *= h1;
+                poradok = Math.Log((res_runge_2 - res) / (res_runge_1 - res) - 1) / Math.Log(0.5);
+                strList.Add(String.Format("|{0,4} |{1,21}|{2,21}|{3,21}|", N, res, Exit, poradok));
             } while (Exit > E);
-            //Для Ранге
-            h = h / 4;
-            res_runge_2 += 0.5 * (f(a) + f(b));
-            for (int i = 1; i < 4*N; i++)
-            {               
-                res_runge_2 += f(a +  h * i);                
-            }
-            res_runge_2 *= h;
-            poradok = Math.Log((res_runge_2 - res) / (res_runge_1 - res) - 1) / Math.Log(0.5);
-            strList.Add("Порядок аппроксимации равен = " + poradok);
-            strList.Add(" Общее число обращений к подынтергатльной функции = " + kol_obr);
+            
+            strList.Add(" Общее число обращений к подынтегральной функции = " + kol_obr);
         }
         public void KvadraturTrapecModif()
         {
@@ -169,6 +147,7 @@ namespace SLAU
             int kol_obr = 0;
             double res = 0, xi, M4, M4_temp, Exit, res_runge_1 = 0, res_runge_2 = 0, poradok = 0;
             double h = (b - a) / (N * 2),h1=0;
+            strList.Add("  N  " + "     Интеграл равен  " + "      Погрешность        " + "Порядок аппроксимации равен ");
             do
             {
                 kol_obr = 0;
@@ -199,37 +178,85 @@ namespace SLAU
                 res_runge_1 *= h1;
                 res_runge_1 += h1 * h1 / 12 * (f_derivative(a) - f_derivative(b));
 
-                kol_obr += 2;
-                //Exit =Math.Abs( M4 * Math.Pow(h, 4) * (b - a) / 2880);
+                res_runge_2 += (f(a) + f(b)) / 2;
+                h1 = h1/2;
+                for (int i = 1; i < 4*N; i++)
+                {
+                    res_runge_2 += f(a + h1 * i);
+                }
+                res_runge_2 *= h1;
+                res_runge_2 += h1 * h1 / 12 * (f_derivative(a) - f_derivative(b));
+                poradok = Math.Log(Math.Abs((res_runge_2 - res) / (res_runge_1 - res) - 1)) / Math.Log(0.5);
+
                 Exit = Math.Abs((res - res_runge_1)) / res_runge_1;
-                strList.Add("N = " + N + " Интеграл равен " + res + " Погрешность = " + Exit);
+                strList.Add(String.Format("|{0,4} |{1,21}|{2,21}|{3,21}|", N, res, Exit, poradok));
             } while (Exit > E);
-            //Для Ранге
-            
-            res_runge_2 += (f(a) + f(b)) / 2;
-            
-            
-            N *= 4;
-            h = (double)(b - a) / N;
-            for (int i = 1; i < N; i++)
-            {               
-                res_runge_2 += f(a + h * i);
-                //res_runge_1 += f(a + 0.5 * h * i);
-                //res_runge_2 += f(a + 0.25 * h * i);
-            }            
-            res_runge_2 *= h;
-            res_runge_2 += h * h / 12 * (f_derivative(a) - f_derivative(b));
-            poradok = Math.Log(Math.Abs((res_runge_2 - res) / (res_runge_1 - res) - 1)) / Math.Log(0.5);
-            strList.Add("Порядок аппроксимации равен = " + poradok);
-            strList.Add(" Общее число обращений к подынтергатльной функции = " + kol_obr);
+            strList.Add(" Общее число обращений к подынтегральной функции = " + kol_obr);
 
         }
-        
+        public void Simpson()
+        {
+            strList.Add("Квадратурное приближение методом Симпсона");
+            N = 1;
+            int kol_obr = 0;
+            double res = 0, Exit, res_runge_1 = 0, res_runge_2 = 0, poradok = 0;
+            double h = 0, h1 = 0;
+            strList.Add("  N  " + "     Интеграл равен  " +  "      Погрешность        "  + "Порядок аппроксимации равен " );
+            do
+            {
+                kol_obr = 0;
+                res_runge_2 = res_runge_1 = res = 0;
+                kol_obr += 2;
+                N *= 2;
+                h = (double)(b - a) / N;
+
+                res += f(a) + f(b);
+                for (int i = 1; i <= N/2; i++)
+                {
+                    res += 4 * f(a + (2 * i - 1) * h);
+                    if (i < N / 2 )
+                        res += 2 * f(a + (2 * i) * h);
+                }
+                res *= h / 3;
+
+                res_runge_1 += f(a) + f(b);
+                h1 = h / 2;
+                for (int i = 1; i <= N; i++)
+                {
+                    res_runge_1 += 4 * f(a + (2 * i - 1) * h1);
+                    if (i < N)
+                        res_runge_1 += 2 * f(a + (2 * i) * h1);
+                }
+                res_runge_1 *= h1 / 3;
+                Exit = Math.Abs((res - res_runge_1)) / res_runge_1;
+
+                res_runge_2 += f(a) + f(b);
+                h1 = h1 / 2;
+                for (int i = 1; i <= 2 * N; i++)
+                {
+                    res_runge_2 += 4 * f(a + (2 * i - 1) * h1);
+                    if (i < N * 2 )
+                        res_runge_2 += 2 * f(a + (2 * i) * h1);
+                }
+                res_runge_2 *= h1 / 3;
+
+                poradok = Math.Log(Math.Abs((res_runge_2 - res) / (res_runge_1 - res) - 1)) / Math.Log(0.5);
+                 
+
+                strList.Add(String.Format("|{0,4} |{1,21}|{2,21}|{3,21}|", N, res, Exit, poradok));
+
+            } while (Exit > E);
+            kol_obr += (int)(1 - Math.Pow(2, (int)Math.Log(N, 2)+1)) / (1 - 2);
+            strList.Add(" Общее число обращений к подынтегральной функции = " + kol_obr);
+
+        }
+
         //Решение уравнения
         private void SolveButton_Click(object sender, EventArgs e)
         {
             KvadraturTrapec();
             KvadraturTrapecModif();
+            Simpson();
             SaveFile();
         }
 
