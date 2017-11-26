@@ -184,7 +184,7 @@ namespace SLAU
             strList.Add("Квадратурное приближение модифицированным методом трапеций");
             N = 2;
             int kol_obr = 0;
-            double res = 0, xi, M4, M4_temp, Exit, res_runge_1 = 0, res_runge_2 = 0, poradok = 0;
+            double res = 0, Exit, res_runge_1 = 0, res_runge_2 = 0, poradok = 0;
             double h = (b - a) / (N * 2),h1=0;
             strList.Add("  N  " + "     Интеграл равен  " + "      Погрешность        " + "Порядок аппроксимации равен ");
             do
@@ -198,7 +198,7 @@ namespace SLAU
                 res_runge_2 += f_TrapecModif(a, b, 4 * N); 
                 poradok = Math.Log(Math.Abs((res_runge_2 - res) / (res_runge_1 - res) - 1)) / Math.Log(0.5);
                 Exit = Math.Abs((res - res_runge_1)) / res_runge_1;
-                kol_obr += (int)(Math.Pow(2, (int)Math.Log(N, 2)) + 3);
+                kol_obr += (int)(Math.Pow(2, (int)Math.Log(N, 2)) + 1);
                 strList.Add(String.Format("|{0,4} |{1,21}|{2,21}|{3,21}|", N, res, Exit, poradok));
             } while (Exit > E);
             strList.Add(" Общее число обращений к подынтегральной функции = " + kol_obr);
@@ -225,7 +225,7 @@ namespace SLAU
                 strList.Add(String.Format("|{0,4} |{1,21}|{2,21}|{3,21}|", N, res, Exit, poradok));
 
             } while (Exit > E);
-            kol_obr += (int)(1 - Math.Pow(2, (int)Math.Log(N, 2)+1)) / (1 - 2);
+            kol_obr += (int)(Math.Pow(2, (int)Math.Log(N, 2)+1)) + 1;
             strList.Add(" Общее число обращений к подынтегральной функции = " + kol_obr);
         }
         public void Gaus()
